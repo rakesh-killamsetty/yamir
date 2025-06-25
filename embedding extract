@@ -1,0 +1,7 @@
+# utils/embed_utils.py
+def get_embedding(image, model):
+    model.eval()
+    with torch.no_grad():
+        image = preprocess(image).unsqueeze(0).to(device)
+        embedding = model.forward_once(image)
+    return embedding
