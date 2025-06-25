@@ -1,0 +1,9 @@
+utils/box_utils.py
+def sliding_window_boxes(image, step=32, size=128):
+    boxes = []
+    H, W, _ = image.shape
+    for y in range(0, H - size, step):
+        for x in range(0, W - size, step):
+            box = image[y:y+size, x:x+size]
+            boxes.append(((x, y, x+size, y+size), box))
+    return boxes
