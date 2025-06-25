@@ -1,0 +1,41 @@
+# detect.py
+import torch
+import cv2
+from models.siamese import SiameseNetwork
+from utils.box_utils import sliding_window_boxes
+from utils.embed_utils import get_embedding
+from torchvision import transforms
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+model = SiameseNetwork().to(device)
+model.load_state_dict(torch.load("siamese.pth"))
+
+preprocess = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((224, 224)),
+    transforms.ToTensor()
+])
+
+# Load support (reference) image
+support_img = cv2.imread("data/support/class1_1.jpg")
+support_embed = get_embedding(support_img, model)
+
+# Load target image
+target_img = cv2.imread("data/query/test1.jpg")
+
+max_score = -1
+best_box = None
+
+for (coords, crop) in sliding_window_boxes(target_img):
+    crop_embed = get_embedding(crop, model)
+    sim = torch.nn.functional.cosine_similarity(support_embed, crop_embed).item()
+
+    if sim > max_score:
+        max_score = sim
+        best_box = coords
+
+x1, y1, x2, y2 = best_box
+cv2.rectangle(target_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+cv2.imwrite("output.jpg", target_img)
+print(f"Best match at box {best_box} with similarity {max_score}")
